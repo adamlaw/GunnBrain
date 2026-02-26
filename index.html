@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GunnBrain Capture</title>
+    <style>
+      body { font-family: sans-serif; padding: 20px; text-align: center; }
+      input { width: 100%; padding: 15px; margin-bottom: 20px; font-size: 1.2em; box-sizing: border-box; }
+      .btn-container { display: flex; gap: 10px; justify-content: center; }
+      button { padding: 15px; flex: 1; font-size: 1.1em; border: none; border-radius: 5px; color: white; cursor: pointer;}
+      #sendBtn { background: #4285f4; }
+      #micBtn { background: #ea4335; }
+    </style>
+  </head>
+  <body>
+    <h3>GunnBrain Capture</h3>
+    
+    <input type="text" id="userInput" placeholder="What's on your mind?" autofocus>
+    
+    <div class="btn-container">
+      <button id="micBtn" onclick="startDictation()">🎤 Speak</button>
+      <button id="sendBtn" onclick="sendToSheet()">Send to Brain</button>
+    </div>
+
+    <script>
+      // --- CONFIGURATION ---
+      // Paste the Apps Script URL ending in /exec inside the quotes
+      const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE";
+      // Must exactly match the SECRET_TOKEN in your Google Apps Script
+      const SECRET_TOKEN = "GunnBrain2026";
+
+      function sendToSheet() {
+        const inputEl = document.getElementById('userInput');
+        const val = inputEl.value;
+        
+        if(!val) return;
+        
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.innerText = "Processing AI...";
+        sendBtn.disabled = true;
+
+        // Fetch command bypassing CORS by using text/plain
+        fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify({
+            secret: SECRET_TOKEN,
+            text: val
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "success") {
+            inputEl.value = '';
+            alert(data.message);
+          } else {
+            alert("Error: " + data.message);
+          }
+        })
+        .catch(error => {
+          alert("Network Error: " + error);
+        })
+        .finally(() => {
+          sendBtn.innerText = "Send to Brain";
+          sendBtn.disabled = false;
+        });
+      }
+
+      function startDictation() {
+        if (window.hasOwnProperty('webkitSpeechRecognition') || window.hasOwnProperty('SpeechRecognition')) {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          const recognition = new SpeechRecognition();
+
+          recognition.continuous = false;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+
+          const micBtn = document.getElementById('micBtn');
+          micBtn.innerText = "Listening...";
+
+          recognition.start();
+
+          recognition.onresult = function(e) {
+            document.getElementById('userInput').value = e.results[0][0].transcript;
+            recognition.stop();
+            micBtn.innerText = "🎤 Speak";
+          };
+
+          recognition.onerror = function(e) {
+            recognition.stop();
+            micBtn.innerText = "🎤 Speak";
+            alert("Microphone error: " + e.error);
+          };
+        } else {
+          alert("Your browser does not support Voice Dictation.");
+        }
+      }
+    </script>
+  </body>
+</html>
