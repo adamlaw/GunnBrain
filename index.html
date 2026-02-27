@@ -11,6 +11,29 @@
       button { padding: 15px; flex: 1; font-size: 1.1em; border: none; border-radius: 5px; color: white; cursor: pointer;}
       #sendBtn { background: #4285f4; }
       #micBtn { background: #ea4335; }
+      
+      /* Toast Notification Styles (Success Only) */
+      #toast {
+        visibility: hidden;
+        min-width: 250px;
+        background-color: #34a853; /* Green background */
+        color: #fff;
+        text-align: center;
+        border-radius: 5px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        font-size: 1.1em;
+        opacity: 0;
+        transition: opacity 0.5s, visibility 0.5s;
+      }
+      #toast.show {
+        visibility: visible;
+        opacity: 1;
+      }
     </style>
   </head>
   <body>
@@ -23,12 +46,24 @@
       <button id="sendBtn" onclick="sendToSheet()">Send to Brain</button>
     </div>
 
+    <div id="toast"></div>
+
     <script>
       // --- CONFIGURATION ---
-      // Paste the Apps Script URL ending in /exec inside the quotes
-      const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwWZFgT0OS9IX0J1yP6HWjJVTLrGyKfCwWa1JOkh2Ih7QqLWeCN20KpRJE-pGH3qF1ndg/exec";
-      // Must exactly match the SECRET_TOKEN in your Google Apps Script
+      const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE"; 
       const SECRET_TOKEN = "GunnBrain2026";
+
+      // Toast Display Function
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.innerText = message;
+        toast.className = "show";
+        
+        // Hide the toast after 3 seconds
+        setTimeout(function() { 
+          toast.className = toast.className.replace("show", "").trim(); 
+        }, 3000);
+      }
 
       function sendToSheet() {
         const inputEl = document.getElementById('userInput');
@@ -40,7 +75,9 @@
         sendBtn.innerText = "Processing AI...";
         sendBtn.disabled = true;
 
-        // Fetch command bypassing CORS by using text/plain
+        // Force the mobile keyboard to close
+        inputEl.blur();
+
         fetch(WEB_APP_URL, {
           method: 'POST',
           headers: {
@@ -55,7 +92,7 @@
         .then(data => {
           if (data.status === "success") {
             inputEl.value = '';
-            alert(data.message);
+            showToast(data.message);
           } else {
             alert("Error: " + data.message);
           }
@@ -66,6 +103,8 @@
         .finally(() => {
           sendBtn.innerText = "Send to Brain";
           sendBtn.disabled = false;
+          // Optional: Restore focus to the input box after completion
+          // inputEl.focus(); 
         });
       }
 
